@@ -11,9 +11,11 @@ Author URI: http://l3rady.com
 // Stop direct access
 !defined( 'ABSPATH' ) and exit;
 
-// Set in config if you are using some sort of shared
-// config where ABSPATH is the same on all sites
 if ( !defined( 'WP_APC_KEY_SALT' ) ) {
+	/**
+	 * Set in config if you are using some sort of shared
+	 * config where ABSPATH is the same on all sites
+	 */
 	define( 'WP_APC_KEY_SALT', 'wp' );
 }
 
@@ -196,16 +198,70 @@ function wp_cache_reset() {
 }
 
 
+/**
+ * WordPress APC Object Cache Backend
+ *
+ * The WordPress Object Cache is used to save on trips to the database. The
+ * APC Object Cache stores all of the cache data to APC and makes the cache
+ * contents available by using a key, which is used to name and later retrieve
+ * the cache contents.
+ */
 class WP_Object_Cache {
+	/**
+	 * @var string MD5 hash of the current installation ABSPATH
+	 */
 	private $abspath = '';
-	private $blog_prefix = '';
+
+
+	/**
+	 * @var int The sites current blog ID. This only differs if running a multi-site installations
+	 */
+	private $blog_prefix = 1;
+
+
+	/**
+	 * @var int Keeps count of how many times the cache was successfully received from APC
+	 */
 	private $cache_hits = 0;
+
+
+	/**
+	 * @var int Keeps count of how many times the cache was not successfully received from APC
+	 */
 	private $cache_misses = 0;
+
+
+	/**
+	 * @var array Holds a list of cache groups that are shared across all sites in a multi-site installation
+	 */
 	private $global_groups = array();
+
+
+	/**
+	 * @var bool True if the current installation is a multi-site
+	 */
 	private $multi_site = false;
+
+
+	/**
+	 * TODO this needs to be implemented correctly
+	 *
+	 * @var array Holds cache that is to be non persistent
+	 */
+	private $non_persistent_cache = array();
+
+
+	/**
+	 * @var array Holds a list of cache groups that are not to be saved to APC
+	 */
 	private $non_persistent_groups = array();
 
 
+	/**
+	 * Singleton. Return instance of WP_Object_Cache
+	 *
+	 * @return WP_Object_Cache
+	 */
 	public static function instance() {
 		static $inst = null;
 
@@ -217,10 +273,16 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * __clone not allowed
+	 */
 	private function __clone() {
 	}
 
 
+	/**
+	 * Direct access to __construct not allowed.
+	 */
 	private function __construct() {
 		global $blog_id;
 
@@ -394,7 +456,7 @@ class WP_Object_Cache {
 
 
 	/**
-	 * @return int|string
+	 * @return int
 	 */
 	public function getBlogPrefix() {
 		return $this->blog_prefix;
@@ -430,6 +492,14 @@ class WP_Object_Cache {
 	 */
 	public function getMultiSite() {
 		return $this->multi_site;
+	}
+
+
+	/**
+	 * @return array
+	 */
+	public function getNonPersistentCache() {
+		return $this->non_persistent_cache;
 	}
 
 
