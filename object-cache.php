@@ -30,7 +30,7 @@ if ( !defined( 'WP_APC_KEY_SALT' ) ) {
  *
  * @return bool  False if cache key and group already exist, true on success
  */
-function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
+function wp_cache_add( $key, $data, $group = 'default', $expire = 0 ) {
 	return WP_Object_Cache::instance()->add( $key, $data, $group, $expire );
 }
 
@@ -59,7 +59,7 @@ function wp_cache_close() {
  *
  * @return false|int False on failure, the item's new value on success.
  */
-function wp_cache_decr( $key, $offset = 1, $group = '' ) {
+function wp_cache_decr( $key, $offset = 1, $group = 'default' ) {
 	return WP_Object_Cache::instance()->decr( $key, $offset, $group );
 }
 
@@ -72,7 +72,7 @@ function wp_cache_decr( $key, $offset = 1, $group = '' ) {
  *
  * @return bool True on successful removal, false on failure
  */
-function wp_cache_delete( $key, $group = '' ) {
+function wp_cache_delete( $key, $group = 'default' ) {
 	return WP_Object_Cache::instance()->delete( $key, $group );
 }
 
@@ -97,7 +97,7 @@ function wp_cache_flush() {
  *
  * @return bool|mixed False on failure to retrieve contents or the cache contents on success
  */
-function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
+function wp_cache_get( $key, $group = 'default', $force = false, &$found = null ) {
 	return WP_Object_Cache::instance()->get( $key, $group, $force, $found );
 }
 
@@ -111,7 +111,7 @@ function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
  *
  * @return false|int False on failure, the item's new value on success.
  */
-function wp_cache_incr( $key, $offset = 1, $group = '' ) {
+function wp_cache_incr( $key, $offset = 1, $group = 'default' ) {
 	return WP_Object_Cache::instance()->incr( $key, $offset, $group );
 }
 
@@ -136,7 +136,7 @@ function wp_cache_init() {
  *
  * @return bool False if not exists, true if contents were replaced
  */
-function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
+function wp_cache_replace( $key, $data, $group = 'default', $expire = 0 ) {
 	return WP_Object_Cache::instance()->replace( $key, $data, $group, $expire );
 }
 
@@ -151,7 +151,7 @@ function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
  *
  * @return bool False on failure, true on success
  */
-function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
+function wp_cache_set( $key, $data, $group = 'default', $expire = 0 ) {
 	return WP_Object_Cache::instance()->set( $key, $data, $group, $expire );
 }
 
@@ -244,8 +244,6 @@ class WP_Object_Cache {
 
 
 	/**
-	 * TODO this needs to be implemented correctly
-	 *
 	 * @var array Holds cache that is to be non persistent
 	 */
 	private $non_persistent_cache = array();
@@ -297,7 +295,31 @@ class WP_Object_Cache {
 			return false;
 		}
 
-		return $this->_store_if_not_exists( $key, $var, $group, $ttl );
+		$key = $this->_key( $key, $group );
+
+		if ( $this->_is_non_persistent_group( $group ) ) {
+			return $this->_add_np( $key, $var );
+		}
+
+		return $this->_add( $key, $var, $ttl );
+	}
+
+
+	private function _add( $key, $var, $ttl ) {
+		if ( $this->_exists( $key ) ) {
+			return false;
+		}
+
+		return $this->_set( $key, $var, $ttl );
+	}
+
+
+	private function _add_np( $key, $var ) {
+		if ( $this->_exists_np( $key ) ) {
+			return false;
+		}
+
+		return $this->_set_np( $key, $var );
 	}
 
 
@@ -320,14 +342,77 @@ class WP_Object_Cache {
 
 
 	public function decr( $key, $offset = 1, $group = 'default' ) {
-		return $this->_decr( $key, $offset, $group );
+		$key = $this->_key( $key, $group );
+
+		if ( $this->_is_non_persistent_group( $group ) ) {
+			return $this->_decr_np( $key, $offset );
+		}
+
+		return $this->_decr( $key, $offset );
+	}
+
+
+	private function _decr( $key, $offset ) {
+		if ( $this->_exists( $key ) ) {
+			return false;
+		}
+
+		$offset = max( intval( $offset ), 0 );
+
+		return apc_dec( $key, $offset );
+	}
+
+
+	private function _decr_np( $key, $offset ) {
+		if ( $this->_exists_np( $key ) ) {
+			return false;
+		}
+
+		$offset = max( intval( $offset ), 0 );
+		$var    = $this->_get_np( $key );
+		$var    = is_numeric( $var ) ? $var : 0;
+		$var    = $var - $offset;
+
+		return $this->_set_np( $key, $var );
 	}
 
 
 	public function delete( $key, $group = 'default', $deprecated = false ) {
 		unset( $deprecated );
 
-		return $this->_delete( $key, $group );
+		$key = $this->_key( $key, $group );
+
+		if ( $this->_is_non_persistent_group( $group ) ) {
+			return $this->_delete_np( $key );
+		}
+
+		return $this->_delete( $key );
+	}
+
+
+	private function _delete( $key ) {
+		return apc_delete( $key );
+	}
+
+
+	private function _delete_np( $key ) {
+		if ( isset( $this->non_persistent_cache[$key] ) ) {
+			unset( $this->non_persistent_cache[$key] );
+
+			return true;
+		}
+
+		return false;
+	}
+
+
+	private function _exists( $key ) {
+		return apc_exists( $key );
+	}
+
+
+	private function _exists_np( $key ) {
+		return isset( $this->non_persistent_cache[$key] );
 	}
 
 
@@ -341,30 +426,158 @@ class WP_Object_Cache {
 	public function get( $key, $group = 'default', $force = false, &$success = null ) {
 		unset( $force );
 
-		$var = $this->_fetch( $key, $group, $success );
+		$key = $this->_key( $key, $group );
+
+		if ( $this->_is_non_persistent_group( $group ) ) {
+			$var = $this->_get_np( $key, $success );
+		}
+		else {
+			$var = $this->_get( $key, $success );
+		}
 
 		if ( $success ) {
 			$this->cache_hits++;
-			return $var;
+		}
+		else {
+			$this->cache_misses++;
 		}
 
-		$this->cache_misses++;
-		return false;
+		return $var;
+	}
+
+
+	private function _get( $key, &$success = null ) {
+		return apc_fetch( $key, $success );
+	}
+
+
+	private function _get_np( $key, &$success = null ) {
+		if ( isset( $this->non_persistent_cache[$key] ) ) {
+			$success = true;
+			return $this->non_persistent_cache[$key];
+		}
+
+		return $success = false;
 	}
 
 
 	public function incr( $key, $offset = 1, $group = 'default' ) {
-		return $this->_incr( $key, $offset, $group );
+		$key = $this->_key( $key, $group );
+
+		if ( $this->_is_non_persistent_group( $group ) ) {
+			return $this->_incr_np( $key, $offset );
+		}
+
+		return $this->_incr( $key, $offset );
+	}
+
+
+	private function _incr( $key, $offset ) {
+		if ( $this->_exists( $key ) ) {
+			return false;
+		}
+
+		$offset = max( intval( $offset ), 0 );
+
+		return apc_inc( $key, $offset );
+	}
+
+
+	private function _incr_np( $key, $offset ) {
+		if ( $this->_exists_np( $key ) ) {
+			return false;
+		}
+
+		$offset = max( intval( $offset ), 0 );
+		$var    = $this->_get_np( $key );
+		$var    = is_numeric( $var ) ? $var : 0;
+		$var    = $var + $offset;
+
+		return $this->_set_np( $key, $var );
+	}
+
+
+	private function _is_non_persistent_group( $group ) {
+		return isset( $this->non_persistent_groups[$group] );
+	}
+
+
+	private function _key( $key, $group ) {
+		if ( empty( $group ) ) {
+			$group = 'default';
+		}
+
+		$prefix = 0;
+
+		if ( !isset( $this->global_groups[$group] ) ) {
+			$prefix = $this->blog_prefix;
+		}
+
+		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $prefix . ':' . $group . ':' . $key;
 	}
 
 
 	public function replace( $key, $var, $group = 'default', $ttl = 0 ) {
-		return $this->_store_if_exists( $key, $var, $group, $ttl );
+		$key = $this->_key( $key, $group );
+
+		if ( $this->_is_non_persistent_group( $group ) ) {
+			return $this->_replace_np( $key, $var );
+		}
+
+		return $this->_replace( $key, $var, $ttl );
+	}
+
+
+	private function _replace( $key, $var, $ttl ) {
+		if ( !$this->_exists( $key ) ) {
+			return false;
+		}
+
+		return $this->_set( $key, $var, $ttl );
+	}
+
+
+	private function _replace_np( $key, $var ) {
+		if ( !$this->_exists_np( $key ) ) {
+			return false;
+		}
+
+		return $this->_set_np( $key, $var );
 	}
 
 
 	public function set( $key, $var, $group = 'default', $ttl = 0 ) {
-		return $this->_store( $key, $var, $group, $ttl );
+		$key = $this->_key( $key, $group );
+
+		if ( $this->_is_non_persistent_group( $group ) ) {
+			return $this->_set_np( $key, $var );
+		}
+
+		return $this->_set( $key, $var, $ttl );
+	}
+
+
+	private function _set( $key, $var, $ttl ) {
+		$ttl = max( intval( $ttl ), 0 );
+
+		if ( is_object( $var ) ) {
+			$var = clone $var;
+		}
+
+		if ( is_array( $var ) ) {
+			$var = new ArrayObject( $var );
+		}
+
+		return apc_store( $key, $var, $ttl );
+	}
+
+
+	private function _set_np( $key, $var ) {
+		if ( is_object( $var ) ) {
+			$var = clone $var;
+		}
+
+		return $this->non_persistent_cache[$key] = $var;
 	}
 
 
@@ -388,91 +601,6 @@ class WP_Object_Cache {
 		return false;
 	}
 
-
-
-	private function _decr( $key, $offset, $group ) {
-		$key = $this->_key( $key, $group );
-		$offset = max( intval( $offset ), 0);
-
-		return apc_dec( $key, $offset );
-	}
-
-
-	private function _delete( $key, $group ) {
-		$key = $this->_key( $key, $group );
-
-		return apc_delete( $key );
-	}
-
-
-	private function _exists( $key, $group ) {
-		return apc_exists( $this->_key( $key, $group ) );
-	}
-
-
-	private function _fetch( $key, $group, &$success = null ) {
-		$key = $this->_key( $key, $group );
-
-		return apc_fetch( $key, $success );
-	}
-
-
-	private function _incr( $key, $offset, $group ) {
-		$key = $this->_key( $key, $group );
-		$offset = max( intval( $offset ), 0);
-
-		return apc_inc( $key, $offset );
-	}
-
-
-	private function _key( $key, $group ) {
-		if ( empty( $group ) ) {
-			$group = 'default';
-		}
-
-		$prefix = 0;
-
-		if ( !isset( $this->global_groups[$group] ) ) {
-			$prefix = $this->blog_prefix;
-		}
-
-		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $prefix . ':' . $group . ':' . $key;
-	}
-
-
-	private function _store( $key, $var, $group, $ttl ) {
-		$key = $this->_key( $key, $group );
-		$ttl = max( intval( $ttl ), 0 );
-
-		if ( is_object( $var ) ) {
-			$var = clone $var;
-		}
-
-		if ( is_array( $var ) ) {
-			$var = new ArrayObject( $var );
-		}
-
-		return apc_store( $key, $var, $ttl );
-	}
-
-
-	private function _store_if_exists( $key, $var, $group, $ttl ) {
-		if ( !$this->_exists( $key, $group ) ) {
-			return false;
-		}
-
-		return $this->_store( $key, $var, $group, $ttl );
-	}
-
-
-	private function _store_if_not_exists( $key, $var, $group, $ttl ) {
-		if ( $this->_exists( $key, $group ) ) {
-			return false;
-		}
-
-		return $this->_store( $key, $var, $group, $ttl );
-	}
-	
 
 	/**
 	 * @return string
