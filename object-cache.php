@@ -29,9 +29,7 @@ if ( !defined( 'WP_APC_KEY_SALT' ) ) {
  * @return bool  False if cache key and group already exist, true on success
  */
 function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
-	global $wp_object_cache;
-
-	return $wp_object_cache->add( $key, $data, $group, $expire );
+	return WP_Object_Cache::instance()->add( $key, $data, $group, $expire );
 }
 
 
@@ -60,9 +58,7 @@ function wp_cache_close() {
  * @return false|int False on failure, the item's new value on success.
  */
 function wp_cache_decr( $key, $offset = 1, $group = '' ) {
-	global $wp_object_cache;
-
-	return $wp_object_cache->decr( $key, $offset, $group );
+	return WP_Object_Cache::instance()->decr( $key, $offset, $group );
 }
 
 
@@ -75,9 +71,7 @@ function wp_cache_decr( $key, $offset = 1, $group = '' ) {
  * @return bool True on successful removal, false on failure
  */
 function wp_cache_delete( $key, $group = '' ) {
-	global $wp_object_cache;
-
-	return $wp_object_cache->delete( $key, $group );
+	return WP_Object_Cache::instance()->delete( $key, $group );
 }
 
 
@@ -87,9 +81,7 @@ function wp_cache_delete( $key, $group = '' ) {
  * @return bool False on failure, true on success
  */
 function wp_cache_flush() {
-	global $wp_object_cache;
-
-	return $wp_object_cache->flush();
+	return WP_Object_Cache::instance()->flush();
 }
 
 
@@ -104,9 +96,7 @@ function wp_cache_flush() {
  * @return bool|mixed False on failure to retrieve contents or the cache contents on success
  */
 function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
-	global $wp_object_cache;
-
-	return $wp_object_cache->get( $key, $group, $force, $found );
+	return WP_Object_Cache::instance()->get( $key, $group, $force, $found );
 }
 
 
@@ -120,9 +110,7 @@ function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
  * @return false|int False on failure, the item's new value on success.
  */
 function wp_cache_incr( $key, $offset = 1, $group = '' ) {
-	global $wp_object_cache;
-
-	return $wp_object_cache->incr( $key, $offset, $group );
+	return WP_Object_Cache::instance()->incr( $key, $offset, $group );
 }
 
 
@@ -132,7 +120,7 @@ function wp_cache_incr( $key, $offset = 1, $group = '' ) {
  * @global WP_Object_Cache $wp_object_cache WordPress Object Cache
  */
 function wp_cache_init() {
-	$GLOBALS['wp_object_cache'] = new WP_Object_Cache();
+	$GLOBALS['wp_object_cache'] = WP_Object_Cache::instance();
 }
 
 
@@ -147,9 +135,7 @@ function wp_cache_init() {
  * @return bool False if not exists, true if contents were replaced
  */
 function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
-	global $wp_object_cache;
-
-	return $wp_object_cache->replace( $key, $data, $group, $expire );
+	return WP_Object_Cache::instance()->replace( $key, $data, $group, $expire );
 }
 
 
@@ -164,9 +150,7 @@ function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
  * @return bool False on failure, true on success
  */
 function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
-	global $wp_object_cache;
-
-	return $wp_object_cache->set( $key, $data, $group, $expire );
+	return WP_Object_Cache::instance()->set( $key, $data, $group, $expire );
 }
 
 
@@ -178,9 +162,7 @@ function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
  * @param int $blog_id Blog ID
  */
 function wp_cache_switch_to_blog( $blog_id ) {
-	global $wp_object_cache;
-
-	$wp_object_cache->switch_to_blog( $blog_id );
+	WP_Object_Cache::instance()->switch_to_blog( $blog_id );
 }
 
 
@@ -190,9 +172,7 @@ function wp_cache_switch_to_blog( $blog_id ) {
  * @param string|array $groups A group or an array of groups to add
  */
 function wp_cache_add_global_groups( $groups ) {
-	global $wp_object_cache;
-
-	$wp_object_cache->add_global_groups( $groups );
+	WP_Object_Cache::instance()->add_global_groups( $groups );
 }
 
 
@@ -202,9 +182,7 @@ function wp_cache_add_global_groups( $groups ) {
  * @param string|array $groups A group or an array of groups to add
  */
 function wp_cache_add_non_persistent_groups( $groups ) {
-	global $wp_object_cache;
-
-	$wp_object_cache->add_non_persistent_groups( $groups );
+	WP_Object_Cache::instance()->add_non_persistent_groups( $groups );
 }
 
 
@@ -214,31 +192,45 @@ function wp_cache_add_non_persistent_groups( $groups ) {
  * @return bool Always returns false
  */
 function wp_cache_reset() {
-	global $wp_object_cache;
-
-	return $wp_object_cache->reset();
+	return WP_Object_Cache::instance()->reset();
 }
 
 
 class WP_Object_Cache {
-	var $cache_hits = 0;
-	var $cache_misses = 0;
-	var $global_groups = array();
-	var $non_persistent_groups = array();
-	var $abspath = '';
-	var $blog_prefix = '';
+	private $abspath = '';
+	private $blog_prefix = '';
+	private $cache_hits = 0;
+	private $cache_misses = 0;
+	private $global_groups = array();
+	private $multi_site = false;
+	private $non_persistent_groups = array();
 
 
-	function __construct() {
-		global $blog_id;
+	public static function instance() {
+		static $inst = null;
 
-		$this->abspath     = md5( ABSPATH );
-		$this->multisite   = is_multisite();
-		$this->blog_prefix = $this->multisite ? (int) $blog_id : 1;
+		if ( $inst === null ) {
+			$inst = new WP_Object_Cache();
+		}
+
+		return $inst;
 	}
 
 
-	function add_global_groups( $groups ) {
+	private function __clone() {
+	}
+
+
+	private function __construct() {
+		global $blog_id;
+
+		$this->abspath     = md5( ABSPATH );
+		$this->multi_site  = is_multisite();
+		$this->blog_prefix = $this->multi_site ? (int) $blog_id : 1;
+	}
+
+
+	public function add_global_groups( $groups ) {
 		$groups = (array) $groups;
 
 		$groups = array_fill_keys( $groups, true );
@@ -247,7 +239,7 @@ class WP_Object_Cache {
 	}
 
 
-	function add_non_persistent_groups( $groups ) {
+	public function add_non_persistent_groups( $groups ) {
 		$groups = (array) $groups;
 
 		$groups = array_fill_keys( $groups, true );
@@ -256,7 +248,7 @@ class WP_Object_Cache {
 	}
 
 
-	function get( $key, $group = 'default', $force = false, &$success = null ) {
+	public function get( $key, $group = 'default', $force = false, &$success = null ) {
 		unset( $force );
 
 		$key = $this->_key( $key, $group );
@@ -272,7 +264,7 @@ class WP_Object_Cache {
 	}
 
 
-	function add( $key, $var, $group = 'default', $ttl = 0 ) {
+	public function add( $key, $var, $group = 'default', $ttl = 0 ) {
 		if ( wp_suspend_cache_addition() ) {
 			return false;
 		}
@@ -281,17 +273,17 @@ class WP_Object_Cache {
 	}
 
 
-	function set( $key, $var, $group = 'default', $ttl = 0 ) {
+	public function set( $key, $var, $group = 'default', $ttl = 0 ) {
 		return $this->_store( $key, $var, $group, $ttl );
 	}
 
 
-	function replace( $key, $var, $group = 'default', $ttl = 0 ) {
+	public function replace( $key, $var, $group = 'default', $ttl = 0 ) {
 		return $this->_store_if_exists( $key, $var, $group, $ttl );
 	}
 
 
-	function delete( $key, $group = 'default', $deprecated = false ) {
+	public function delete( $key, $group = 'default', $deprecated = false ) {
 		unset( $deprecated );
 
 		$key = $this->_key( $key, $group );
@@ -300,30 +292,30 @@ class WP_Object_Cache {
 	}
 
 
-	function incr( $key, $offset = 1, $group = 'default' ) {
+	public function incr( $key, $offset = 1, $group = 'default' ) {
 		return $this->_adjust( $key, $offset, $group );
 	}
 
 
-	function decr( $key, $offset = 1, $group = 'default' ) {
+	public function decr( $key, $offset = 1, $group = 'default' ) {
 		$offset *= -1;
 
 		return $this->_adjust( $key, $offset, $group );
 	}
 
 
-	function flush() {
+	public function flush() {
 		return apc_clear_cache( 'user' );
 	}
 
 
-	function reset() {
+	public function reset() {
 		_deprecated_function( __FUNCTION__, '3.5', 'switch_to_blog()' );
 		return false;
 	}
 
 
-	function stats() {
+	public function stats() {
 		echo '<p>';
 		echo '<strong>Cache Hits:</strong> ' . $this->cache_hits . '<br />';
 		echo '<strong>Cache Misses:</strong> ' . $this->cache_misses . '<br />';
@@ -331,13 +323,13 @@ class WP_Object_Cache {
 	}
 
 
-	function switch_to_blog( $blog_id ) {
+	public function switch_to_blog( $blog_id ) {
 		$blog_id           = (int) $blog_id;
-		$this->blog_prefix = $this->multisite ? $blog_id : 1;
+		$this->blog_prefix = $this->multi_site ? $blog_id : 1;
 	}
 
 
-	protected function _key( $key, $group ) {
+	private function _key( $key, $group ) {
 		if ( empty( $group ) ) {
 			$group = 'default';
 		}
@@ -352,7 +344,7 @@ class WP_Object_Cache {
 	}
 
 
-	protected function _store( $key, $var, $group, $ttl ) {
+	private function _store( $key, $var, $group, $ttl ) {
 		if ( !isset( $this->non_persistent_groups[$group] ) ) {
 			return false;
 		}
@@ -372,7 +364,7 @@ class WP_Object_Cache {
 	}
 
 
-	protected function _store_if_exists( $key, $var, $group, $ttl ) {
+	private function _store_if_exists( $key, $var, $group, $ttl ) {
 		$exist_key = $this->_key( $key, $group );
 
 		if ( apc_exists( $exist_key ) ) {
@@ -383,12 +375,68 @@ class WP_Object_Cache {
 	}
 
 
-	protected function _adjust( $key, $offset, $group ) {
+	private function _adjust( $key, $offset, $group ) {
 		$offset = intval( $offset );
 		$key    = $this->_key( $key, $group );
 		$var    = intval( apc_fetch( $key ) );
 		$var += $offset;
 
 		return $var;
+	}
+
+
+	/**
+	 * @return string
+	 */
+	public function getAbspath() {
+		return $this->abspath;
+	}
+
+
+	/**
+	 * @return int|string
+	 */
+	public function getBlogPrefix() {
+		return $this->blog_prefix;
+	}
+
+
+	/**
+	 * @return int
+	 */
+	public function getCacheHits() {
+		return $this->cache_hits;
+	}
+
+
+	/**
+	 * @return int
+	 */
+	public function getCacheMisses() {
+		return $this->cache_misses;
+	}
+
+
+	/**
+	 * @return array
+	 */
+	public function getGlobalGroups() {
+		return $this->global_groups;
+	}
+
+
+	/**
+	 * @return boolean
+	 */
+	public function getMultiSite() {
+		return $this->multi_site;
+	}
+
+
+	/**
+	 * @return array
+	 */
+	public function getNonPersistentGroups() {
+		return $this->non_persistent_groups;
 	}
 }
