@@ -331,7 +331,7 @@ class WP_Object_Cache {
 			return false;
 		}
 
-		return $this->_store_if_exists( $key, $var, $group, $ttl );
+		return $this->_store_if_not_exists( $key, $var, $group, $ttl );
 	}
 
 
@@ -427,6 +427,17 @@ class WP_Object_Cache {
 
 
 	private function _store_if_exists( $key, $var, $group, $ttl ) {
+		$exist_key = $this->_key( $key, $group );
+
+		if ( !apc_exists( $exist_key ) ) {
+			return false;
+		}
+
+		return $this->_store( $key, $var, $group, $ttl );
+	}
+
+
+	private function _store_if_not_exists( $key, $var, $group, $ttl ) {
 		$exist_key = $this->_key( $key, $group );
 
 		if ( apc_exists( $exist_key ) ) {
