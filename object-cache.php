@@ -3,7 +3,7 @@
 Plugin Name: WordPress APC Object Cache Backend
 Plugin URI: https://github.com/l3rady/WordPress-APC-Object-Cache
 Description: APC backend for WordPress' Object Cache
-Version: 1.0.1
+Version: 1.0.2
 Author: Scott Cariss
 Author URI: http://l3rady.com
 */
@@ -432,7 +432,7 @@ class WP_Object_Cache {
 	 * @return false|int False on failure, the item's new value on success.
 	 */
 	private function _decr( $key, $offset ) {
-		if ( $this->_exists( $key ) ) {
+		if ( !$this->_exists( $key ) ) {
 			return false;
 		}
 
@@ -451,7 +451,7 @@ class WP_Object_Cache {
 	 * @return false|int False on failure, the item's new value on success.
 	 */
 	private function _decr_np( $key, $offset ) {
-		if ( $this->_exists_np( $key ) ) {
+		if ( !$this->_exists_np( $key ) ) {
 			return false;
 		}
 
@@ -668,7 +668,7 @@ class WP_Object_Cache {
 	 * @return false|int False on failure, the item's new value on success.
 	 */
 	private function _incr( $key, $offset ) {
-		if ( $this->_exists( $key ) ) {
+		if ( !$this->_exists( $key ) ) {
 			return false;
 		}
 
@@ -687,7 +687,7 @@ class WP_Object_Cache {
 	 * @return false|int False on failure, the item's new value on success.
 	 */
 	private function _incr_np( $key, $offset ) {
-		if ( $this->_exists_np( $key ) ) {
+		if ( !$this->_exists_np( $key ) ) {
 			return false;
 		}
 
