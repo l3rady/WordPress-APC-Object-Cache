@@ -3,7 +3,7 @@
 Plugin Name: WordPress APC Object Cache Backend
 Plugin URI: https://github.com/l3rady/WordPress-APC-Object-Cache
 Description: APC backend for WordPress' Object Cache
-Version: 1.0
+Version: 1.0.1
 Author: Scott Cariss
 Author URI: http://l3rady.com
 */
@@ -605,7 +605,19 @@ class WP_Object_Cache {
 	 * @return bool|mixed False on failure to retrieve contents or the cache contents on success
 	 */
 	private function _get( $key, &$success = null ) {
-		return apc_fetch( $key, $success );
+		$var = apc_fetch( $key, $success );
+
+		if ( is_object( $var ) && 'ArrayObject' === get_class( $var ) ) {
+			$var = $var->getArrayCopy();
+		}
+		elseif ( null === $var ) {
+			$var = false;
+		}
+		elseif ( is_object( $var ) ) {
+			$var = clone $var;
+		}
+
+		return $var;
 	}
 
 
