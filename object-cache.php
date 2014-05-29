@@ -605,7 +605,19 @@ class WP_Object_Cache {
 	 * @return bool|mixed False on failure to retrieve contents or the cache contents on success
 	 */
 	private function _get( $key, &$success = null ) {
-		return apc_fetch( $key, $success );
+		$var = apc_fetch( $key, $success );
+
+		if ( is_object( $var ) && 'ArrayObject' === get_class( $var ) ) {
+			$var = $var->getArrayCopy();
+		}
+		elseif ( null === $var ) {
+			$var = false;
+		}
+		elseif ( is_object( $var ) ) {
+			$var = clone $var;
+		}
+
+		return $var;
 	}
 
 
