@@ -112,6 +112,24 @@ function wp_cache_get( $key, $group = 'default', $force = false, &$found = null 
 
 
 /**
+ * Retrieve multiple values from cache.
+ *
+ * Gets multiple values from cache, including across multiple groups
+ *
+ * Usage: array( 'group0' => array( 'key0', 'key1', 'key2', ), 'group1' => array( 'key0' ) )
+ *
+ * @param array $groups Array of groups and keys to retrieve
+ *
+ * @return array Array of cached values as
+ *    array( 'group0' => array( 'key0' => 'value0', 'key1' => 'value1', 'key2' => 'value2', ) )
+ *    Non-existent keys are not returned.
+ */
+function wp_cache_get_multi( $groups ) {
+	return WP_Object_Cache::instance()->get_multi( $groups );
+}
+
+
+/**
  * Increment numeric cache item's value
  *
  * @param int|string $key    The cache key to increment
@@ -648,6 +666,43 @@ class WP_Object_Cache {
 		}
 
 		return $success = false;
+	}
+
+
+	/**
+	 * Retrieve multiple values from cache.
+	 *
+	 * Gets multiple values from cache, including across multiple groups
+	 *
+	 * Usage: array( 'group0' => array( 'key0', 'key1', 'key2', ), 'group1' => array( 'key0' ) )
+	 *
+	 * @param array $groups Array of groups and keys to retrieve
+	 *
+	 * @return array Array of cached values as
+	 *    array( 'group0' => array( 'key0' => 'value0', 'key1' => 'value1', 'key2' => 'value2', ) )
+	 *    Non-existent keys are not returned.
+	 */
+	public function get_multi( $groups ) {
+		if ( empty( $groups ) || !is_array( $groups ) ) {
+			return false;
+		}
+
+		$vars    = array();
+		$success = false;
+
+		foreach ( $groups as $group => $keys ) {
+			$vars[$group] = array();
+
+			foreach ( $keys as $key ) {
+				$var = $this->get( $key, $group, false, $success );
+
+				if ( $success ) {
+					$vars[$group][$key] = $var;
+				}
+			}
+		}
+
+		return $vars;
 	}
 
 
