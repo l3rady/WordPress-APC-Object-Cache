@@ -28,14 +28,6 @@ Author URI: http://l3rady.com
 // Stop direct access
 !defined( 'ABSPATH' ) and exit;
 
-if ( !defined( 'WP_APC_KEY_SALT' ) ) {
-	/**
-	 * Set in config if you are using some sort of shared
-	 * config where ABSPATH is the same on all sites
-	 */
-	define( 'WP_APC_KEY_SALT', 'wp' );
-}
-
 
 /**
  * Adds data to the cache, if the cache key does not already exist.
@@ -232,6 +224,12 @@ class WP_Object_Cache {
 
 
 	/**
+	 * @var bool Stores if APC is available.
+	 */
+	private $apc_available = false;
+
+
+	/**
 	 * @var int The sites current blog ID. This only
 	 *    differs if running a multi-site installations
 	 */
@@ -306,9 +304,18 @@ class WP_Object_Cache {
 	private function __construct() {
 		global $blog_id;
 
-		$this->abspath     = md5( ABSPATH );
-		$this->multi_site  = is_multisite();
-		$this->blog_prefix = $this->multi_site ? (int) $blog_id : 1;
+		if ( !defined( 'WP_APC_KEY_SALT' ) ) {
+			/**
+			 * Set in config if you are using some sort of shared
+			 * config where ABSPATH is the same on all sites
+			 */
+			define( 'WP_APC_KEY_SALT', 'wp' );
+		}
+
+		$this->abspath       = md5( ABSPATH );
+		$this->apc_available = ( extension_loaded( 'apc' ) && ini_get( 'apc.enabled' ) );
+		$this->multi_site    = is_multisite();
+		$this->blog_prefix   = $this->multi_site ? (int) $blog_id : 1;
 	}
 
 
@@ -329,7 +336,7 @@ class WP_Object_Cache {
 
 		$key = $this->_key( $key, $group );
 
-		if ( $this->_is_non_persistent_group( $group ) ) {
+		if ( !$this->apc_available || $this->_is_non_persistent_group( $group ) ) {
 			return $this->_add_np( $key, $var );
 		}
 
@@ -415,7 +422,7 @@ class WP_Object_Cache {
 	public function decr( $key, $offset = 1, $group = 'default' ) {
 		$key = $this->_key( $key, $group );
 
-		if ( $this->_is_non_persistent_group( $group ) ) {
+		if ( !$this->apc_available || $this->_is_non_persistent_group( $group ) ) {
 			return $this->_decr_np( $key, $offset );
 		}
 
@@ -480,7 +487,7 @@ class WP_Object_Cache {
 
 		$key = $this->_key( $key, $group );
 
-		if ( $this->_is_non_persistent_group( $group ) ) {
+		if ( !$this->apc_available || $this->_is_non_persistent_group( $group ) ) {
 			return $this->_delete_np( $key );
 		}
 
@@ -553,7 +560,12 @@ class WP_Object_Cache {
 	 */
 	public function flush() {
 		$this->non_persistent_cache = array();
-		return apc_clear_cache( 'user' );
+
+		if ( $this->apc_available ) {
+			apc_clear_cache( 'user' );
+		}
+
+		return true;
 	}
 
 
@@ -578,7 +590,7 @@ class WP_Object_Cache {
 
 		$key = $this->_key( $key, $group );
 
-		if ( $this->_is_non_persistent_group( $group ) ) {
+		if ( !$this->apc_available || $this->_is_non_persistent_group( $group ) ) {
 			$var = $this->_get_np( $key, $success );
 		}
 		else {
@@ -651,7 +663,7 @@ class WP_Object_Cache {
 	public function incr( $key, $offset = 1, $group = 'default' ) {
 		$key = $this->_key( $key, $group );
 
-		if ( $this->_is_non_persistent_group( $group ) ) {
+		if ( !$this->apc_available || $this->_is_non_persistent_group( $group ) ) {
 			return $this->_incr_np( $key, $offset );
 		}
 
@@ -748,7 +760,7 @@ class WP_Object_Cache {
 	public function replace( $key, $var, $group = 'default', $ttl = 0 ) {
 		$key = $this->_key( $key, $group );
 
-		if ( $this->_is_non_persistent_group( $group ) ) {
+		if ( !$this->apc_available || $this->_is_non_persistent_group( $group ) ) {
 			return $this->_replace_np( $key, $var );
 		}
 
@@ -804,7 +816,7 @@ class WP_Object_Cache {
 	public function set( $key, $var, $group = 'default', $ttl = 0 ) {
 		$key = $this->_key( $key, $group );
 
-		if ( $this->_is_non_persistent_group( $group ) ) {
+		if ( !$this->apc_available || $this->_is_non_persistent_group( $group ) ) {
 			return $this->_set_np( $key, $var );
 		}
 
@@ -871,6 +883,14 @@ class WP_Object_Cache {
 	 */
 	public function getAbspath() {
 		return $this->abspath;
+	}
+
+
+	/**
+	 * @return boolean
+	 */
+	public function getApcAvailable() {
+		return $this->apc_available;
 	}
 
 
