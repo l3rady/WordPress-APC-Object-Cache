@@ -226,11 +226,26 @@ function wp_cache_reset() {
 }
 
 
+/**
+ * Invalidate a site's object cache
+ *
+ * @param mixed $sites Sites ID's that want flushing.
+ *                     Don't pass a site to flush current site
+ *
+ * @return bool
+ */
 function wp_cache_flush_site( $sites = null ) {
 	return WP_Object_Cache::instance()->flush_sites( $sites );
 }
 
 
+/**
+ * Invalidate a groups object cache
+ *
+ * @param mixed $groups A group or an array of groups to invalidate
+ *
+ * @return bool
+ */
 function wp_cache_flush_group( $groups = 'default' ) {
 	return WP_Object_Cache::instance()->flush_groups( $groups );
 }
@@ -286,6 +301,12 @@ class WP_Object_Cache {
 
 
 	/**
+	 * @var array Holds an array of versions of the retrieved groups
+	 */
+	private $group_versions = array();
+
+
+	/**
 	 * @var bool True if the current installation is a multi-site
 	 */
 	private $multi_site = false;
@@ -303,10 +324,10 @@ class WP_Object_Cache {
 	private $non_persistent_groups = array();
 
 
+	/**
+	 * @var array Holds an array of versions of the retrieved sites
+	 */
 	private $site_versions = array();
-
-
-	private $group_versions = array();
 
 
 	/**
@@ -603,6 +624,13 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * Invalidate a groups object cache
+	 *
+	 * @param mixed $groups A group or an array of groups to invalidate
+	 *
+	 * @return bool
+	 */
 	public function flush_groups( $groups ) {
 		$groups = (array) $groups;
 
@@ -620,6 +648,14 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * Invalidate a site's object cache
+	 *
+	 * @param mixed $sites Sites ID's that want flushing.
+	 *                     Don't pass a site to flush current site
+	 *
+	 * @return bool
+	 */
 	public function flush_sites( $sites ) {
 		$sites = (array) $sites;
 
@@ -719,6 +755,13 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * Get the cache version of a given key
+	 *
+	 * @param string $key
+	 *
+	 * @return int cache version
+	 */
 	private function _get_cache_version( $key ) {
 		if ( !$this->apc_available ) {
 			$version = (int) apc_fetch( $key );
@@ -734,11 +777,26 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * Build cache version key
+	 *
+	 * @param string $type  Type of key, for site or group
+	 * @param mixed  $value the group or site id
+	 *
+	 * @return string The key
+	 */
 	private function _get_cache_version_key( $type, $value ) {
 		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $type . ':' . $value;
 	}
 
 
+	/**
+	 * Get the groups cache version
+	 *
+	 * @param string $group The group to get version for
+	 *
+	 * @return int The group cache version
+	 */
 	private function _get_group_cache_version( $group ) {
 		if ( !isset( $this->group_versions[$group] ) ) {
 			$this->group_versions[$group] = $this->_get_cache_version(
@@ -790,6 +848,13 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * Get the sites cache version
+	 *
+	 * @param int $site The site to get version for
+	 *
+	 * @return int The site cache version
+	 */
 	private function _get_site_cache_version( $site ) {
 		if ( !isset( $this->site_versions[$site] ) ) {
 			$this->site_versions[$site] = $this->_get_cache_version(
@@ -1021,6 +1086,14 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * Set the cache version for a given key
+	 *
+	 * @param string $key
+	 * @param int    $version
+	 *
+	 * @return mixed
+	 */
 	private function _set_cache_version( $key, $version ) {
 		if ( !$this->apc_available ) {
 			return apc_store( $key, $version );
@@ -1031,11 +1104,23 @@ class WP_Object_Cache {
 	}
 
 
+	/**
+	 * Set the version for a groups cache
+	 *
+	 * @param string $group
+	 * @param int    $version
+	 */
 	private function _set_group_cache_version( $group, $version ) {
 		$this->_set_cache_version( $this->_get_cache_version_key( 'GroupVersion', $group ), $version );
 	}
 
 
+	/**
+	 * Set the version for a sites cache
+	 *
+	 * @param int $site
+	 * @param int $version
+	 */
 	private function _set_site_cache_version( $site, $version ) {
 		$this->_set_cache_version( $this->_get_cache_version_key( 'SiteVersion', $site ), $version );
 	}
@@ -1103,6 +1188,14 @@ class WP_Object_Cache {
 
 
 	/**
+	 * @return array
+	 */
+	public function getGroupVersions() {
+		return $this->group_versions;
+	}
+
+
+	/**
 	 * @return boolean
 	 */
 	public function getMultiSite() {
@@ -1123,5 +1216,13 @@ class WP_Object_Cache {
 	 */
 	public function getNonPersistentGroups() {
 		return $this->non_persistent_groups;
+	}
+
+
+	/**
+	 * @return array
+	 */
+	public function getSiteVersions() {
+		return $this->site_versions;
 	}
 }
