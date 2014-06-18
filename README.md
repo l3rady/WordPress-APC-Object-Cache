@@ -5,7 +5,7 @@ Donate link: [http://l3rady.com/donate][2]<br/>
 Tags: APC, object cache, backend, cache, performance, speed<br/>
 Requires at least: 3.3<br/>
 Tested up to: 3.9.1<br/>
-Stable tag: 1.0.2
+Stable tag: 1.1
 
 WordPress APC Object Cache Backend provides a persistent memory-based backend for the WordPress object cache.
 
@@ -40,14 +40,24 @@ Define `WP_APC_KEY_SALT` to something that is unique for each install (like an m
 
 ## Changelog ##
 
+### 1.1 ###
++ NEW: Add `wp_cache_flush_site()` and `wp_cache_flush_group()` [See][5]
++ NEW: Add `wp_cache_get_multi()` [See][4]
++ BUGFIX: If APC is not available then fallback to using non persistent cache [See][3]
+
 ### 1.0.2 ###
-+ BUGFIX: Fix inverted logic in incr and decr functions
++ BUGFIX: Fix inverted logic in incr and decr functions [See][6]
 
 ### 1.0.1 ###
-+ BUGFIX: On APC fetch convert arrayObject back to an array
++ BUGFIX: On APC fetch convert arrayObject back to an array [See][7]
 
 ### 1.0 ###
 + Initial release
 
 [1]: https://wordpress.org/plugins/apc/
 [2]: http://l3rady.com/donate
+[3]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/3
+[4]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/4
+[5]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/5
+[6]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/2
+[7]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/1
