@@ -303,6 +303,12 @@ class WP_Object_Cache {
 	private $non_persistent_groups = array();
 
 
+	private $site_versions = array();
+
+
+	private $group_versions = array();
+
+
 	/**
 	 * Singleton. Return instance of WP_Object_Cache
 	 *
@@ -730,7 +736,16 @@ class WP_Object_Cache {
 
 
 	private function _get_group_cache_version( $group ) {
-		return $this->_get_cache_version( $this->_get_cache_version_key( 'GroupVersion', $group ) );
+		if ( !isset( $this->group_versions[$group] ) ) {
+			$this->group_versions[$group] = $this->_get_cache_version(
+				$this->_get_cache_version_key(
+					'GroupVersion',
+					$group
+				)
+			);
+		}
+
+		return $this->group_versions[$group];
 	}
 
 
@@ -772,7 +787,16 @@ class WP_Object_Cache {
 
 
 	private function _get_site_cache_version( $site ) {
-		return $this->_get_cache_version( $this->_get_cache_version_key( 'SiteVersion', $site ) );
+		if ( !isset( $this->site_versions[$site] ) ) {
+			$this->site_versions[$site] = $this->_get_cache_version(
+				$this->_get_cache_version_key(
+					'SiteVersion',
+					$site
+				)
+			);
+		}
+
+		return $this->site_versions[$site];
 	}
 
 
