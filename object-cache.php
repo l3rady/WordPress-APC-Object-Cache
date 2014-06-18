@@ -226,6 +226,16 @@ function wp_cache_reset() {
 }
 
 
+function wp_cache_flush_sites( $sites ) {
+	WP_Object_Cache::instance()->flush_sites( $sites );
+}
+
+
+function wp_cache_flush_groups( $groups ) {
+	WP_Object_Cache::instance()->flush_groups( $groups );
+}
+
+
 /**
  * WordPress APC Object Cache Backend
  *
@@ -587,6 +597,36 @@ class WP_Object_Cache {
 	}
 
 
+	public function flush_groups( $groups ) {
+		$groups = (array) $groups;
+
+		if ( empty( $groups ) ) {
+			return;
+		}
+
+		foreach ( $groups as $group ) {
+			$version = $this->_get_group_cache_version( $group );
+			$version++;
+			$this->_set_group_cache_version( $group, $version );
+		}
+	}
+
+
+	public function flush_sites( $sites ) {
+		$sites = (array) $sites;
+
+		if ( empty( $sites ) ) {
+			return;
+		}
+
+		foreach ( $sites as $site ) {
+			$version = $this->_get_site_cache_version( $site );
+			$version++;
+			$this->_set_site_cache_version( $site, $version );
+		}
+	}
+
+
 	/**
 	 * Retrieves the cache contents, if it exists
 	 *
@@ -669,6 +709,31 @@ class WP_Object_Cache {
 	}
 
 
+	private function _get_cache_version( $key ) {
+		if ( !$this->apc_available ) {
+			$version = (int) apc_fetch( $key );
+		}
+		elseif ( isset( $this->non_persistent_cache[$key] ) ) {
+			$version = (int) $this->non_persistent_cache[$key];
+		}
+		else {
+			$version = 0;
+		}
+
+		return $version;
+	}
+
+
+	private function _get_cache_version_key( $type, $value ) {
+		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $type . ':' . $value;
+	}
+
+
+	private function _get_group_cache_version( $group ) {
+		return $this->_get_cache_version( $this->_get_cache_version_key( 'GroupVersion', $group ) );
+	}
+
+
 	/**
 	 * Retrieve multiple values from cache.
 	 *
@@ -703,6 +768,11 @@ class WP_Object_Cache {
 		}
 
 		return $vars;
+	}
+
+
+	private function _get_site_cache_version( $site ) {
+		return $this->_get_cache_version( $this->_get_cache_version_key( 'SiteVersion', $site ) );
 	}
 
 
@@ -798,7 +868,10 @@ class WP_Object_Cache {
 			$prefix = $this->blog_prefix;
 		}
 
-		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $prefix . ':' . $group . ':' . $key;
+		$group_version = $this->_get_group_cache_version( $group );
+		$site_version  = $this->_get_site_cache_version( $prefix );
+
+		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $prefix . ':' . $group . ':' . $key . ':v' . $site_version . '.' . $group_version;
 	}
 
 
@@ -917,6 +990,26 @@ class WP_Object_Cache {
 		}
 
 		return $this->non_persistent_cache[$key] = $var;
+	}
+
+
+	private function _set_cache_version( $key, $version ) {
+		if ( !$this->apc_available ) {
+			return apc_store( $key, $version );
+		}
+		else {
+			return $this->non_persistent_cache[$key] = $version;
+		}
+	}
+
+
+	private function _set_group_cache_version( $group, $version ) {
+		$this->_set_cache_version( $this->_get_cache_version_key( 'GroupVersion', $group ), $version );
+	}
+
+
+	private function _set_site_cache_version( $site, $version ) {
+		$this->_set_cache_version( $this->_get_cache_version_key( 'SiteVersion', $site ), $version );
 	}
 
 
