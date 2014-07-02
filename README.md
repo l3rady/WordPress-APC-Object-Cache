@@ -41,7 +41,7 @@ Define `WP_APC_KEY_SALT` to something that is unique for each install (like an m
 ## Changelog ##
 
 ### 1.1.1 ###
-+ BUGFIX: Fix logic in `get_cache_version()`
++ BUGFIX: Fix logic in `get_cache_version()` [See][7]
 
 ### 1.1 ###
 + NEW: Add `wp_cache_flush_site()` and `wp_cache_flush_group()` [See][5]
@@ -64,3 +64,4 @@ Define `WP_APC_KEY_SALT` to something that is unique for each install (like an m
 [5]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/5
 [6]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/2
 [7]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/1
+[8]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/7
