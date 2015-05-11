@@ -3,12 +3,12 @@
 Plugin Name: WordPress APC Object Cache Backend
 Plugin URI: https://github.com/l3rady/WordPress-APC-Object-Cache
 Description: APC backend for WordPress' Object Cache
-Version: 1.1.1
+Version: 1.1.2
 Author: Scott Cariss
 Author URI: http://l3rady.com
 */
 
-/*  Copyright 2014  Scott Cariss  (email : scott@l3rady.com)
+/*  Copyright 2015  Scott Cariss  (email : scott@l3rady.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1095,7 +1095,7 @@ class WP_Object_Cache {
 	 * @return mixed
 	 */
 	private function _set_cache_version( $key, $version ) {
-		if ( !$this->apc_available ) {
+		if ( $this->apc_available ) {
 			return apc_store( $key, $version );
 		}
 		else {
