@@ -3,7 +3,7 @@
 Plugin Name: WordPress APC Object Cache Backend
 Plugin URI: https://github.com/l3rady/WordPress-APC-Object-Cache
 Description: APC backend for WordPress' Object Cache
-Version: 1.1.2
+Version: 1.1.3
 Author: Scott Cariss
 Author URI: http://l3rady.com
 */
@@ -661,6 +661,11 @@ class WP_Object_Cache {
 
 		if ( empty( $sites ) ) {
 			$sites = array( $this->blog_prefix );
+		}
+
+		// Add global groups (site 0) to be flushed.
+		if ( !in_array( 0, $sites ) ) {
+			$sites[] = 0;
 		}
 
 		foreach ( $sites as $site ) {
