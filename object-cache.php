@@ -663,6 +663,11 @@ class WP_Object_Cache {
 			$sites = array( $this->blog_prefix );
 		}
 
+		// Add global groups (site 0) to be flushed.
+		if ( !in_array( 0, $sites ) ) {
+			$sites[] = 0;
+		}
+
 		foreach ( $sites as $site ) {
 			$version = $this->_get_site_cache_version( $site );
 			$version++;
