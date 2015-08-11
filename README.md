@@ -4,8 +4,8 @@ Contributors: l3rady<br/>
 Donate link: [http://l3rady.com/donate][2]<br/>
 Tags: APC, object cache, backend, cache, performance, speed<br/>
 Requires at least: 3.3<br/>
-Tested up to: 4.2.2<br/>
-Stable tag: 1.1.2
+Tested up to: 4.2.4<br/>
+Stable tag: 1.1.3
 
 WordPress APC Object Cache Backend provides a persistent memory-based backend for the WordPress object cache.
 
@@ -40,6 +40,9 @@ Define `WP_APC_KEY_SALT` to something that is unique for each install (like an m
 
 ## Changelog ##
 
+### 1.1.3 ###
++ BUGFIX: Fix `wp_cache_flush_site()` to flush global groups [See][10]
+
 ### 1.1.2 ###
 + BUGFIX: Fix site cache key not saving in `_set_cache_version()` [See][9]
 
@@ -69,3 +72,4 @@ Define `WP_APC_KEY_SALT` to something that is unique for each install (like an m
 [7]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/1
 [8]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/7
 [9]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/9
+[10]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/10
