@@ -24,7 +24,7 @@ version has been cherry picked over to this version.
 
 ## Installation ##
 
-1. Verify that you have PHP 5.2.4+ and a compatible APC version installed.
+1. Verify that you have PHP 5.2.4+ and a compatible APC version installed. PHP7 users will need to install the APCu_bc [11] extension 
 2. Copy `object-cache.php` to your WordPress content directory (`wp-content/` by default).
 3. Done!
 
@@ -73,3 +73,4 @@ Define `WP_CACHE_KEY_SALT` to something that is unique for each install (like an
 [8]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/7
 [9]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/9
 [10]: https://github.com/l3rady/WordPress-APC-Object-Cache/pull/10
+[11]: https://pecl.php.net/package/apcu_bc
