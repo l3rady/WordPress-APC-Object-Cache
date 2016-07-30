@@ -359,12 +359,12 @@ class WP_Object_Cache {
 	private function __construct() {
 		global $blog_id;
 
-		if ( !defined( 'WP_APC_KEY_SALT' ) ) {
+		if ( !defined( 'WP_CACHE_KEY_SALT' ) ) {
 			/**
 			 * Set in config if you are using some sort of shared
 			 * config where ABSPATH is the same on all sites
 			 */
-			define( 'WP_APC_KEY_SALT', 'wp' );
+			define( 'WP_CACHE_KEY_SALT', 'wp' );
 		}
 
 		$this->abspath       = md5( ABSPATH );
@@ -791,7 +791,7 @@ class WP_Object_Cache {
 	 * @return string The key
 	 */
 	private function _get_cache_version_key( $type, $value ) {
-		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $type . ':' . $value;
+		return WP_CACHE_KEY_SALT . ':' . $this->abspath . ':' . $type . ':' . $value;
 	}
 
 
@@ -969,7 +969,7 @@ class WP_Object_Cache {
 		$group_version = $this->_get_group_cache_version( $group );
 		$site_version  = $this->_get_site_cache_version( $prefix );
 
-		return WP_APC_KEY_SALT . ':' . $this->abspath . ':' . $prefix . ':' . $group . ':' . $key . ':v' . $site_version . '.' . $group_version;
+		return WP_CACHE_KEY_SALT . ':' . $this->abspath . ':' . $prefix . ':' . $group . ':' . $key . ':v' . $site_version . '.' . $group_version;
 	}
 
 

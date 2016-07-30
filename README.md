@@ -36,7 +36,7 @@ Maybe, but I'm not going to support them, and you shouldn't still be running the
 
 ### I share `wp-config.php` among multiple WordPress installs. How can I guarantee key uniqueness? ###
 
-Define `WP_APC_KEY_SALT` to something that is unique for each install (like an md5 of the MySQL host, database, and table prefix).
+Define `WP_CACHE_KEY_SALT` to something that is unique for each install (like an md5 of the MySQL host, database, and table prefix).
 
 ## Changelog ##
 
