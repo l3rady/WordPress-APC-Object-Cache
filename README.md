@@ -14,7 +14,7 @@ WordPress APC Object Cache Backend provides a persistent memory-based backend fo
 WordPress APC Object Cache Backend provides a persistent memory-based backend for the WordPress object cache.
 
 An object cache is a place for WordPress and WordPress extensions to store the results of complex operations. On subsequent loads,
-this data can be fetched from the cache, which will be must faster than dynamically generating it on every page load.
+this data can be fetched from the cache, which will be much faster than dynamically generating it on every page load.
 
 Be sure to read the installation instructions, as this is **not** a traditional plugin, and needs to be installed in a specific location.
 
